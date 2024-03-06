@@ -96,23 +96,12 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)
         for ingredient in ingredients:
-            # iid = ingredient['ingredient']['id'].id
-            # obj = get_object_or_404(Ingredient, pk=iid)
-            q = ingredient['quantity']
             RecipeIngredient.objects.create(
                 recipe=recipe,
                 # ingredient=ingredient['id'],
                 ingredient=Ingredient.objects.get(pk=1),
                 quantity=ingredient['quantity'],
             )
-            # q = ingredient['quantity']
-            # iid = ingredient['id']
-            # current_ingredient = Ingredient.objects.get(id=ingredient['id'])
-            # RecipeIngredient.objects.create(
-            #     recipe=recipe,
-            #     ingredient=current_ingredient,
-            #     quantity=ingredient['quantity']
-            # )
 
         for tag in tags:
             current_tag = Tag.objects.get(id=tag)
