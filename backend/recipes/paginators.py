@@ -10,4 +10,5 @@ class StandardResultsSetPagination(pagination.PageNumberPagination):
 
 class Pagination(LimitOffsetPagination):
     default_limit = 10
+    limit_query_param = 'limit'
     max_limit = 100
