@@ -1,0 +1,22 @@
+# Не игнорировать следующие файлы и папки
+!manage.py
+!app/
+!requirements.txt
+!Dockerfile
+!docker-compose.yml
+!docker-compose.production.yml
+
+# Игнорировать все файлы .pyc
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Игнорировать все файлы .log
+**/*.log
+
+# Игнорировать все файлы .sql
+**/*.sql
+
+# Игнорировать все файлы .sqlite
+**/*.sqlite
