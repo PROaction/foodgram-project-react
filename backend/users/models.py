@@ -33,9 +33,7 @@ class CustomUser(AbstractUser):
         null=True,
     )
     subscribers = models.ManyToManyField(
-        'self',
-        symmetrical=False,
-        related_name='subscriptions'
+        'self', symmetrical=False, related_name='subscriptions'
     )
 
     groups = models.ManyToManyField(

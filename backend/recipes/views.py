@@ -4,28 +4,29 @@ import tempfile
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from rest_framework import status
-from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from django_filters.rest_framework import DjangoFilterBackend
+from fpdf import FPDF
+from rest_framework import serializers, status
+from rest_framework.decorators import action, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
-from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient
-from recipes.paginators import StandardResultsSetPagination, Pagination
+from recipes.filters import IngredientFilter
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
+from recipes.paginators import Pagination
 from recipes.permissions import IsOwnerOrReadOnly
-from recipes.serializers import IngredientReadSerializer, AddRecipeSerializer, TagReadSerializer, \
-    RecipeReadSerializer, RecipeWriteSerializer
-from fpdf import FPDF
-from tempfile import NamedTemporaryFile
-from rest_framework import serializers
+from recipes.serializers import (
+    IngredientReadSerializer,
+    RecipeReadSerializer,
+    RecipeWriteSerializer,
+    SimpleRecipeSerializer,
+    TagReadSerializer,
+)
 
 
 class PDF(FPDF):
+
     def header(self):
         self.set_font('FreeSans', '', 12)
         self.cell(0, 10, 'Список покупок', 0, 1, 'C')
@@ -63,7 +64,9 @@ class RecipeViewSet(ModelViewSet):
         author_id = self.request.query_params.get('author', None)
         tags = self.request.query_params.getlist('tags', None)
         is_favorited = self.request.query_params.get('is_favorited', None)
-        is_in_shopping_cart = self.request.query_params.get('is_in_shopping_cart', None)
+        is_in_shopping_cart = self.request.query_params.get(
+            'is_in_shopping_cart', None
+        )
 
         if author_id is not None:
             queryset = queryset.filter(author__id=author_id)
@@ -75,34 +78,62 @@ class RecipeViewSet(ModelViewSet):
                 flag = True if is_favorited == '1' else False
                 queryset = queryset.filter(is_favorited=flag)
             else:
-                raise serializers.ValidationError({"is_favorited": "This field can only be 0 or 1."})
+                raise serializers.ValidationError(
+                    {"is_favorited": "This field can only be 0 or 1."}
+                )
 
         if is_in_shopping_cart is not None:
             if is_in_shopping_cart in ['0', '1']:
                 flag = True if is_in_shopping_cart == '1' else False
                 queryset = queryset.filter(is_in_shopping_cart=flag)
             else:
-                raise serializers.ValidationError({"is_in_shopping_cart": "This field can only be 0 or 1."})
+                raise serializers.ValidationError(
+                    {"is_in_shopping_cart": "This field can only be 0 or 1."}
+                )
 
         return queryset
 
-    @action(detail=False, methods=['get'], url_path='download_shopping_cart')
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+        else:
+            permission_classes = []
+        return [permission() for permission in permission_classes]
+
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='download_shopping_cart',
+        permission_classes=[IsAuthenticated]
+    )
     def download_shopping_cart(self, request):
+        if not request.user.is_authenticated:
+            return Response(
+                {"detail": "Пользователь не аутентифицирован"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
         response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="shopping_cart.pdf"'
+        response['Content-Disposition'] = ('attachment; '
+                                           'filename="shopping_cart.pdf"')
 
         pdf = PDF()
         pdf.add_font('FreeSans', '', 'static/freesans.ttf', uni=True)
 
         recipes_in_cart = Recipe.objects.filter(is_in_shopping_cart=True)
-        ingredients = RecipeIngredient.objects.filter(recipe__in=recipes_in_cart)
-        ingredients = ingredients.values('ingredient__name', 'ingredient__measurement_unit'
-                                         ).annotate(total_quantity=Sum('quantity'))
+        ingredients = RecipeIngredient.objects.filter(
+            recipe__in=recipes_in_cart
+        )
+        ingredients = ingredients.values(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(total_quantity=Sum('quantity'))
         text = ''
         for ingredient in ingredients:
-            text += '\n' + (f'{ingredient["ingredient__name"]} '
-                            f'({ingredient["ingredient__measurement_unit"]}) — '
-                            f'{ingredient["total_quantity"]}')
+            text += '\n' + (
+                f'{ingredient["ingredient__name"]} '
+                f'({ingredient["ingredient__measurement_unit"]}) — '
+                f'{ingredient["total_quantity"]}'
+            )
         pdf.print_chapter('Список покупок:', text)
 
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp:
@@ -115,57 +146,88 @@ class RecipeViewSet(ModelViewSet):
         return response
 
     @action(detail=True, methods=['post', 'delete'])
+    @permission_classes([IsAuthenticated])
     def shopping_cart(self, request, *args, **kwargs):
-        # recipe = get_object_or_404(Recipe, pk=self.kwargs['pk'])
+        if not request.user.is_authenticated:
+            return Response(
+                {"detail": "Пользователь не аутентифицирован"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
         try:
             recipe = Recipe.objects.get(pk=self.kwargs['pk'])
         except ObjectDoesNotExist:
-            return Response({"detail": "Рецепт не найден"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Рецепт не найден"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if request.method == 'POST':
-            if recipe.is_in_shopping_cart:
-                return Response({"detail": "Рецепт уже в корзине покупок"}, status=status.HTTP_400_BAD_REQUEST)
-            recipe.is_in_shopping_cart = True
-            recipe.save()
-
-            serializer = AddRecipeSerializer(recipe)
+            if request.user in recipe.is_in_shopping_cart.all():
+                return Response(
+                    {"detail": "Рецепт уже в корзине покупок"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            recipe.is_in_shopping_cart.add(request.user)
+            serializer = SimpleRecipeSerializer(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         elif request.method == 'DELETE':
-            if not recipe.is_in_shopping_cart:
-                return Response({"detail": "Рецепт отсутствует в корзине покупок"}, status=status.HTTP_400_BAD_REQUEST)
-            recipe.is_in_shopping_cart = False
-            recipe.save()
+            if request.user not in recipe.is_in_shopping_cart.all():
+                return Response(
+                    {"detail": "Рецепт отсутствует в корзине покупок"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            recipe.is_in_shopping_cart.remove(request.user)
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post', 'delete'])
+    @permission_classes([IsAuthenticated])
     def favorite(self, request, *args, **kwargs):
-        # recipe = get_object_or_404(Recipe, pk=self.kwargs['pk'])
+        if not request.user.is_authenticated:
+            return Response(
+                {"detail": "Пользователь не аутентифицирован"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
         try:
             recipe = Recipe.objects.get(pk=self.kwargs['pk'])
         except ObjectDoesNotExist:
-            return Response({"detail": "Рецепт не найден"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Рецепт не найден"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if request.method == 'POST':
-            if recipe.is_favorited:
-                return Response({"detail": "Рецепт уже в избранном"}, status=status.HTTP_400_BAD_REQUEST)
-            recipe.is_favorited = True
-            recipe.save()
+            if request.user in recipe.is_favorited.all():
+                return Response(
+                    {"detail": "Рецепт уже в избранном"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            recipe.is_favorited.add(request.user)
 
-            serializer = AddRecipeSerializer(recipe)
+            serializer = SimpleRecipeSerializer(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == 'DELETE':
-            if not recipe.is_favorited:
-                return Response({"detail": "Рецепт отсутствует в избранном"}, status=status.HTTP_400_BAD_REQUEST)
-            recipe.is_favorited = False
-            recipe.save()
+            if request.user not in recipe.is_favorited.all():
+                return Response(
+                    {"detail": "Рецепт отсутствует в избранном"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            recipe.is_favorited.remove(request.user)
+
             return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class TagViewSet(ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagReadSerializer
+    pagination_class = None
 
 
 class IngredientViewSet(ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientReadSerializer
+    pagination_class = None
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter

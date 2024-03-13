@@ -18,16 +18,23 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='recipe',
             name='author',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.AddField(
             model_name='recipe',
             name='ingredients',
-            field=models.ManyToManyField(through='recipes.RecipeIngredient', to='recipes.Ingredient'),
+            field=models.ManyToManyField(
+                through='recipes.RecipeIngredient', to='recipes.Ingredient'
+            ),
         ),
         migrations.AddField(
             model_name='recipe',
             name='tags',
-            field=models.ManyToManyField(through='recipes.RecipeTag', to='recipes.Tag'),
+            field=models.ManyToManyField(
+                through='recipes.RecipeTag', to='recipes.Tag'
+            ),
         ),
     ]
