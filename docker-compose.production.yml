@@ -34,7 +34,7 @@ services:
     image: popovsergey/foodgram_gateway
     env_file: .env
     ports:
-      - 9000:80
+      - 9090:80
     volumes:
       - static:/staticfiles/
       - media:/media
