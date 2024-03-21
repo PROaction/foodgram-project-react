@@ -19,7 +19,8 @@ class UserViewSet(BaseUserViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return UserRegistrationSerializer
-        elif self.action == 'set_password':
+
+        if self.action == 'set_password':
             return PasswordChangeSerializer
         return super().get_serializer_class()
 
@@ -46,12 +47,12 @@ class UserViewSet(BaseUserViewSet):
         user = self.get_object()
         if user.id == request.user.id:
             return Response(
-                {"detail": "Нельзя подписываться на самого себя."},
+                {'detail': 'Нельзя подписываться на самого себя.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         if request.user.subscriptions.filter(id=user.id).exists():
             return Response(
-                {"detail": "Вы уже подписаны на этого пользователя."},
+                {'detail': 'Вы уже подписаны на этого пользователя.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
