@@ -5,6 +5,7 @@ from django.db import models
 
 from foodgram_backend.settings import MAX_VALUE, MIN_VALUE
 
+
 User = get_user_model()
 
 

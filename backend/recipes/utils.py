@@ -1,5 +1,6 @@
 from fpdf import FPDF
 
+
 FONT_SIZE = 12
 WIDTH = 0
 HEIGHT = 10
