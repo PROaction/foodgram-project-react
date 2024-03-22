@@ -2,14 +2,19 @@ import base64
 import imghdr
 import uuid
 
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.validators import MaxValueValidator, MinValueValidator
 from rest_framework import serializers
 import six
 
-from foodgram_backend.settings import FILE_NAME_LENGTH, MAX_VALUE, MIN_VALUE
 from recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeTag, Tag
 from users.serializers import UserListSerializer
+
+
+FILE_NAME_LENGTH = getattr(settings, "FILE_NAME_LENGTH", 12)
+MIN_VALUE = getattr(settings, "MIN_VALUE", 1)
+MAX_VALUE = getattr(settings, "MAX_VALUE", 32_000)
 
 
 class Base64ImageField(serializers.ImageField):
@@ -36,18 +41,14 @@ class Base64ImageField(serializers.ImageField):
         return super(Base64ImageField, self).to_internal_value(data)
 
     def get_file_extension(self, file_name, decoded_file):
-
         extension = imghdr.what(file_name, decoded_file)
-        extension = 'jpg' if extension == 'jpeg' else extension
 
-        return extension
+        return 'jpg' if extension == 'jpeg' else extension
 
 
 class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
     amount = serializers.IntegerField(
-        max_digits=5,
-        decimal_places=2,
         validators=[
             MinValueValidator(MIN_VALUE),
             MaxValueValidator(MAX_VALUE)

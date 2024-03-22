@@ -19,6 +19,12 @@ class UserListSerializer(serializers.ModelSerializer):
         return obj.subscribers.filter(id=user.id).exists()
 
 
+class ReadUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ('email', 'id', 'username', 'first_name', 'last_name')
+
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -29,6 +35,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = CustomUser.objects.create_user(**validated_data)
         return user
+
+    def to_representation(self, instance):
+        return ReadUserSerializer(instance).data
 
 
 class PasswordChangeSerializer(serializers.ModelSerializer):

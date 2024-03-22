@@ -45,11 +45,14 @@ class RecipeViewSet(ModelViewSet):
             'is_in_shopping_cart', None
         )
 
-        if is_favorited not in ['0', '1']:
+        if is_favorited is not None and is_favorited not in ['0', '1']:
             raise serializers.ValidationError(
                 {'is_favorited': 'Это поле может принять только 0 или 1.'}
             )
-        if is_in_shopping_cart not in ['0', '1']:
+
+        if is_in_shopping_cart is not None and is_in_shopping_cart not in [
+                '0', '1'
+        ]:
             raise serializers.ValidationError(
                 {
                     'is_in_shopping_cart':
@@ -63,14 +66,12 @@ class RecipeViewSet(ModelViewSet):
             queryset = queryset.filter(tags__slug__in=tags)
 
         if is_favorited is not None:
-            if is_favorited in ['0', '1']:
-                flag = True if is_favorited == '1' else False
-                queryset = queryset.filter(is_favorited=flag)
+            flag = True if is_favorited == '1' else False
+            queryset = queryset.filter(is_favorited=flag)
 
         if is_in_shopping_cart is not None:
-            if is_in_shopping_cart in ['0', '1']:
-                flag = True if is_in_shopping_cart == '1' else False
-                queryset = queryset.filter(is_in_shopping_cart=flag)
+            flag = True if is_in_shopping_cart == '1' else False
+            queryset = queryset.filter(is_in_shopping_cart=flag)
 
         return queryset
 
