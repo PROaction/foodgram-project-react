@@ -63,7 +63,7 @@ class RecipeViewSet(ModelViewSet):
         if author_id is not None:
             queryset = queryset.filter(author__id=author_id)
         if tags is not None and len(tags) > 0:
-            queryset = queryset.filter(tags__slug__in=tags)
+            queryset = queryset.filter(tags__slug__in=tags).distinct()
 
         if is_favorited is not None:
             flag = True if is_favorited == '1' else False
