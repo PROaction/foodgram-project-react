@@ -2,14 +2,16 @@ import json
 import os
 import sys
 
+
 sys.path.append('/app')
 os.environ['DJANGO_SETTINGS_MODULE'] = 'foodgram_backend.settings'
 
-import django
+import django  # noqa: E402
+
 
 django.setup()
 
-from recipes.models import Ingredient, Tag
+from recipes.models import Ingredient, Tag  # noqa: E402
 
 
 def load_data():

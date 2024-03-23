@@ -13,7 +13,7 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from recipes.filters import IngredientFilter
 from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
-from recipes.paginators import Pagination
+from recipes.paginators import StandardResultsSetPagination
 from recipes.permissions import IsOwnerOrReadOnly
 from recipes.serializers import (
     IngredientReadSerializer,
@@ -26,7 +26,7 @@ from recipes.utils import PDF
 
 
 class RecipeViewSet(ModelViewSet):
-    pagination_class = Pagination
+    pagination_class = StandardResultsSetPagination
 
     def get_serializer_class(self):
         if self.action in ['list', 'retrieve']:
