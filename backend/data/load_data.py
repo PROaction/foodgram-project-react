@@ -2,19 +2,16 @@ import json
 import os
 import sys
 
-from django.conf import settings
+import django
+
+from recipes.models import Ingredient, Tag
 
 
 sys.path.append('/app')
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'foodgram_backend.settings'
 
-import django
-
-
 django.setup()
-
-from recipes.models import Ingredient, Tag
 
 
 def load_data():
