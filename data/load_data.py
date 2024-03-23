@@ -4,7 +4,7 @@ import json
 from django.conf import settings
 
 
-sys.path.append('C:/Users/serge/Documents/Projects/Dev/foodgram-project-react/backend')
+sys.path.append('/app')
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'foodgram_backend.settings'
 
@@ -16,7 +16,7 @@ from recipes.models import Ingredient, Tag
 
 
 def load_data():
-    with open('../data/ingredients.json', 'r', encoding='utf-8') as f:
+    with open('/data/ingredients.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     for item in data:
@@ -25,7 +25,7 @@ def load_data():
             measurement_unit=item['measurement_unit']
         )
 
-    with open('../data/tags.json', 'r', encoding='utf-8') as f:
+    with open('/data/tags.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     for item in data:
