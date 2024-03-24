@@ -73,7 +73,9 @@ class RecipeViewSet(ModelViewSet):
         if is_in_shopping_cart is not None:
             flag = True if is_in_shopping_cart == '1' else False
             if flag:
-                queryset = queryset.filter(is_in_shopping_cart=self.request.user)
+                queryset = queryset.filter(
+                    is_in_shopping_cart=self.request.user
+                )
 
         return queryset
 
