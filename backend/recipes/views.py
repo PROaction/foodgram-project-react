@@ -67,11 +67,13 @@ class RecipeViewSet(ModelViewSet):
 
         if is_favorited is not None:
             flag = True if is_favorited == '1' else False
-            queryset = queryset.filter(is_favorited=flag)
+            if flag:
+                queryset = queryset.filter(is_favorited=self.request.user)
 
         if is_in_shopping_cart is not None:
             flag = True if is_in_shopping_cart == '1' else False
-            queryset = queryset.filter(is_in_shopping_cart=flag)
+            if flag:
+                queryset = queryset.filter(is_in_shopping_cart=self.request.user)
 
         return queryset
 
