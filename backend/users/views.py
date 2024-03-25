@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.paginators import Pagination
+from recipes.paginators import StandardResultsSetPagination
 from users.serializers import (
     PasswordChangeSerializer,
     SubscriberSerializer,
@@ -74,7 +74,7 @@ class UserViewSet(BaseUserViewSet):
     def subscriptions(self, request):
         subscriptions = request.user.subscriptions.all()
 
-        paginator = Pagination()
+        paginator = StandardResultsSetPagination()
         paginate_queryset = paginator.paginate_queryset(subscriptions, request)
 
         serializer = SubscriberSerializer(
