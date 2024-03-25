@@ -41,39 +41,37 @@ class UserViewSet(BaseUserViewSet):
         return Response({'status': 'password set'})
 
     @action(
-        detail=True, methods=['post'], permission_classes=[IsAuthenticated]
+        detail=True, methods=['post', 'delete'], permission_classes=[IsAuthenticated]
     )
     def subscribe(self, request, *args, **kwargs):
         user = self.get_object()
-        if user.id == request.user.id:
-            return Response(
-                {'detail': 'Нельзя подписываться на самого себя.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        if request.user.subscriptions.filter(id=user.id).exists():
-            return Response(
-                {'detail': 'Вы уже подписаны на этого пользователя.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if request.method == 'POST':
+            if user.id == request.user.id:
+                return Response(
+                    {'detail': 'Нельзя подписываться на самого себя.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if request.user.subscriptions.filter(id=user.id).exists():
+                return Response(
+                    {'detail': 'Вы уже подписаны на этого пользователя.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        request.user.subscriptions.add(user)
-        serializer = SubscriberSerializer(user, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            request.user.subscriptions.add(user)
+            serializer = SubscriberSerializer(user, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(
-        detail=True, methods=['post'], permission_classes=[IsAuthenticated]
-    )
-    def unsubscribe(self, request, pk=None):
-        user = self.get_object()
-        request.user.subscriptions.remove(user)
-        return Response({'status': 'unsubscribed'})
+        if request.method == 'DELETE':
+            subscription = self.get_object()
+            subscription.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=False,
-        methods=['get', 'delete'],
+        methods=['get'],
         permission_classes=[IsAuthenticated]
     )
-    def subscriptions(self, request, pk=None):
+    def subscriptions(self, request):
         if request.method == 'GET':
             subscriptions = request.user.subscriptions.all()
 
@@ -87,7 +85,4 @@ class UserViewSet(BaseUserViewSet):
             )
             return paginator.get_paginated_response(serializer.data)
 
-        if request.method == 'DELETE':
-            subscription = self.get_object()
-            subscription.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+
