@@ -4,12 +4,13 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from recipes.models import User
 from recipes.paginators import StandardResultsSetPagination
 from users.serializers import (
     PasswordChangeSerializer,
     SubscriberSerializer,
     UserListSerializer,
-    UserRegistrationSerializer,
+    UserRegistrationSerializer, ReadUserSerializer,
 )
 
 
@@ -23,6 +24,12 @@ class UserViewSet(BaseUserViewSet):
         if self.action == 'set_password':
             return PasswordChangeSerializer
         return super().get_serializer_class()
+
+    def retrieve(self, request, *args, **kwargs):
+        user = User.objects.get(pk=kwargs['id'])
+
+        serializer = UserListSerializer(user, context={'request': request})
+        return Response(serializer.data)
 
     @action(
         detail=False, methods=['get'], permission_classes=[IsAuthenticated]

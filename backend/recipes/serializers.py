@@ -12,9 +12,9 @@ from recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeTag, Tag
 from users.serializers import UserListSerializer
 
 
-FILE_NAME_LENGTH = getattr(settings, "FILE_NAME_LENGTH", 12)
-MIN_VALUE = getattr(settings, "MIN_VALUE", 1)
-MAX_VALUE = getattr(settings, "MAX_VALUE", 32_000)
+FILE_NAME_LENGTH = settings.FILE_NAME_LENGTH
+MIN_VALUE = settings.MIN_VALUE
+MAX_VALUE = settings.MAX_VALUE
 
 
 class Base64ImageField(serializers.ImageField):
@@ -103,12 +103,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagReadSerializer(many=True, read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    cooking_time = serializers.IntegerField(
-        validators=[
-            MinValueValidator(MIN_VALUE),
-            MaxValueValidator(MAX_VALUE)
-        ]
-    )
+    cooking_time = serializers.IntegerField()
 
     class Meta:
         model = Recipe
