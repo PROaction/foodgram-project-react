@@ -69,15 +69,25 @@ class UserViewSet(BaseUserViewSet):
         return Response({'status': 'unsubscribed'})
 
     @action(
-        detail=False, methods=['get'], permission_classes=[IsAuthenticated]
+        detail=False,
+        methods=['get', 'delete'],
+        permission_classes=[IsAuthenticated]
     )
-    def subscriptions(self, request):
-        subscriptions = request.user.subscriptions.all()
+    def subscriptions(self, request, pk=None):
+        if request.method == 'GET':
+            subscriptions = request.user.subscriptions.all()
 
-        paginator = StandardResultsSetPagination()
-        paginate_queryset = paginator.paginate_queryset(subscriptions, request)
+            paginator = StandardResultsSetPagination()
+            paginate_queryset = paginator.paginate_queryset(
+                subscriptions, request
+            )
 
-        serializer = SubscriberSerializer(
-            paginate_queryset, many=True, context={'request': request}
-        )
-        return paginator.get_paginated_response(serializer.data)
+            serializer = SubscriberSerializer(
+                paginate_queryset, many=True, context={'request': request}
+            )
+            return paginator.get_paginated_response(serializer.data)
+
+        if request.method == 'DELETE':
+            subscription = self.get_object()
+            subscription.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
