@@ -8,7 +8,6 @@ from recipes.models import User
 from recipes.paginators import StandardResultsSetPagination
 from users.serializers import (
     PasswordChangeSerializer,
-    ReadUserSerializer,
     SubscriberSerializer,
     UserListSerializer,
     UserRegistrationSerializer,
