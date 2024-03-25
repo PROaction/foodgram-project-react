@@ -66,9 +66,14 @@ class UserViewSet(BaseUserViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
-            subscription = self.get_object()
-            subscription.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            if request.user.subscriptions.filter(id=user.id).exists():
+                request.user.subscriptions.remove(user)
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response(
+                    {'detail': 'Вы уже подписаны на этого пользователя.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
     @action(
         detail=False, methods=['get'], permission_classes=[IsAuthenticated]
