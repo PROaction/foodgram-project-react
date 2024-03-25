@@ -41,7 +41,9 @@ class UserViewSet(BaseUserViewSet):
         return Response({'status': 'password set'})
 
     @action(
-        detail=True, methods=['post', 'delete'], permission_classes=[IsAuthenticated]
+        detail=True,
+        methods=['post', 'delete'],
+        permission_classes=[IsAuthenticated]
     )
     def subscribe(self, request, *args, **kwargs):
         user = self.get_object()
@@ -58,7 +60,9 @@ class UserViewSet(BaseUserViewSet):
                 )
 
             request.user.subscriptions.add(user)
-            serializer = SubscriberSerializer(user, context={'request': request})
+            serializer = SubscriberSerializer(
+                user, context={'request': request}
+            )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
@@ -67,9 +71,7 @@ class UserViewSet(BaseUserViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
-        detail=False,
-        methods=['get'],
-        permission_classes=[IsAuthenticated]
+        detail=False, methods=['get'], permission_classes=[IsAuthenticated]
     )
     def subscriptions(self, request):
         if request.method == 'GET':
@@ -84,5 +86,3 @@ class UserViewSet(BaseUserViewSet):
                 paginate_queryset, many=True, context={'request': request}
             )
             return paginator.get_paginated_response(serializer.data)
-
-
